@@ -30,8 +30,10 @@ func main() {
 
 	for {
 		ips := []string{}
-		pods, err := clientset.CoreV1().Pods("rke2-ingress-nginx").List(context.TODO(), metav1.ListOptions{
-			LabelSelector: "app.kubernetes.io/name=rke2-ingress-nginx",
+		namespace := os.Getenv("NAMESPACE")
+		labelSelector := os.Getenv("LABEL_SELECTOR")
+		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+			LabelSelector: labelSelector,
 		})
 		if err != nil {
 			fmt.Println("Error fetching pods:", err)
