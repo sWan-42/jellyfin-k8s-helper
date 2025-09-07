@@ -1,15 +1,11 @@
 package main
 
 import (
-	"context"
 	"encoding/xml"
 	"fmt"
 	"os"
+	"strings"
 	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type NetworkConfiguration struct {
@@ -18,51 +14,52 @@ type NetworkConfiguration struct {
 }
 
 func main() {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
 	for {
-		ips := []string{}
-		namespace := os.Getenv("NAMESPACE")
-		labelSelector := os.Getenv("LABEL_SELECTOR")
-		pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
-			LabelSelector: labelSelector,
-		})
+		fmt.Println("Trying Load the XML file")
+		data, err := os.ReadFile(os.Getenv("CONFIG_PATH"))
 		if err != nil {
-			fmt.Println("Error fetching pods:", err)
-			continue
+			panic(err)
 		}
 
-		for _, pod := range pods.Items {
-			if pod.Status.PodIP != "" {
-				ips = append(ips, pod.Status.PodIP)
-			}
+		fmt.Println("Trying Unmarshal only the KnownProxies section")
+		var config NetworkConfiguration
+		if err := xml.Unmarshal(data, &config); err != nil {
+			panic(err)
 		}
 
-		config := NetworkConfiguration{KnownProxies: ips}
-		filePath := os.Getenv("CONFIG_PATH")
-		file, err := os.Create(filePath)
+		fmt.Println("Trying Replace KnownProxies with new values from updateIPs()")
+		config.KnownProxies = getIngressIPs()
+
+		fmt.Println("Trying Marshal the updated KnownProxies")
+		proxyXML, err := xml.MarshalIndent(config.KnownProxies, "  ", "    ")
 		if err != nil {
-			fmt.Println("Error writing file:", err)
-			continue
-		}
-		defer file.Close()
-
-		encoder := xml.NewEncoder(file)
-		encoder.Indent("", "  ")
-		if err := encoder.Encode(config); err != nil {
-			fmt.Println("Error encoding XML:", err)
-		} else {
-			fmt.Println("Updated network.xml with IPs:", ips)
+			panic(err)
 		}
 
-		time.Sleep(300 * time.Second)
+		fmt.Println("Trying Replace the old KnownProxies block in the original XML")
+		startTag := "<KnownProxies>"
+		endTag := "</KnownProxies>"
+		startIdx := strings.Index(string(data), startTag)
+		endIdx := strings.Index(string(data), endTag) + len(endTag)
+
+		if startIdx == -1 || endIdx == -1 {
+			panic("KnownProxies section not found")
+		}
+
+		updated := string(data[:startIdx]) +
+			startTag + "\n" +
+			string(proxyXML) + "\n" +
+			endTag +
+			string(data[endIdx:])
+
+		fmt.Println("Trying Save the updated XML")
+		if err := os.WriteFile(os.Getenv("CONFIG_PATH"), []byte(updated), 0644); err != nil {
+			panic(err)
+		}
+
+		fmt.Println("KnownProxies updated successfully.")
+
+		fmt.Println("Sleeping for 5 minutes...")
+		time.Sleep(5 * time.Minute)
 	}
 }

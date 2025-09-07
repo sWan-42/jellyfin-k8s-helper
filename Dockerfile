@@ -3,6 +3,6 @@ LABEL org.opencontainers.image.source https://github.com/sWan-42/jellyfin-k8s-he
 WORKDIR /app
 COPY cmd/ .
 
-RUN go build -o sidecar main.go
+RUN go build -o sidecar .
 
 CMD ["./sidecar"]
