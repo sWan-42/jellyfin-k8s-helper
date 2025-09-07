@@ -38,7 +38,7 @@ func main() {
 
 		fmt.Println("Trying Replace the old KnownProxies block in the original XML")
 		startTag := "<KnownProxies>"
-		endTag := "</KnownProxies>"
+		endTag := "  </KnownProxies>"
 		startIdx := strings.Index(string(data), startTag)
 		endIdx := strings.Index(string(data), endTag) + len(endTag)
 
