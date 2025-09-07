@@ -1,0 +1,39 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Vendor directory (if you use Go modules)
+vendor/
+
+# Dependency directories
+Godeps/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# IDE/editor files
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git
+.gitignore
+
+# Build output
+bin/
+build/
+dist/
+
+# Docker files
+Dockerfile*
+.dockerignore
