@@ -47,7 +47,8 @@ func main() {
 		}
 
 		config := NetworkConfiguration{KnownProxies: ips}
-		file, err := os.Create("/config/network.xml")
+		filePath := os.Getenv("CONFIG_PATH")
+		file, err := os.Create(filePath)
 		if err != nil {
 			fmt.Println("Error writing file:", err)
 			continue
